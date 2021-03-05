@@ -1,5 +1,5 @@
 import logging
-from .cost_repository import CostRepository
+from sql.cost_repository import CostRepository
 LOGGER = logging.getLogger(__name__)
 
 

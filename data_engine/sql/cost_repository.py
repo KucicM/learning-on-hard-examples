@@ -1,6 +1,6 @@
-from sql.sqlite_query import SQLQuery
-from sql.sqlite_procedures import init_procedures
-from utils import unpack_inner_tuple
+from data_engine.sql.sqlite_query import SQLQuery
+from data_engine.sql.sqlite_procedures import init_procedures
+from data_engine.utils import unpack_inner_tuple
 from typing import List
 from config import DATABASE_HOST
 import sqlite3

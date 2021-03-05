@@ -1,1 +1,1 @@
-DATABASE_HOST = ':memory:'
+DATABASE_HOST = ":memory:"

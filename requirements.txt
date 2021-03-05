@@ -1,0 +1,14 @@
+attrs==20.3.0
+certifi==2020.12.5
+iniconfig==1.1.1
+more-itertools==8.7.0
+packaging==20.9
+pip==21.0.1
+pluggy==0.13.1
+py==1.10.0
+pyparsing==2.4.7
+pytest==6.2.2
+setuptools==52.0.0.post20210125
+six==1.15.0
+toml==0.10.1
+wheel==0.36.2

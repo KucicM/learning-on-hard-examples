@@ -38,4 +38,4 @@ class SQLiteQuery:
         connection.executemany(self.query, arguments)
 
     def __str__(self) -> str:
-        return 'Query: {}'.format(self.query)
+        return "Query: {}".format(self.query)
