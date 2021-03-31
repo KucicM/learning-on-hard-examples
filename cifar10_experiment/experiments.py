@@ -5,6 +5,8 @@ from cifar10_experiment.datamodule import CIFAR10DataModule
 from cifar10_experiment.model import ResNet9
 from high_cost_data_engine import utils
 import pytorch_lightning as pl
+import logging
+LOGGER = logging.getLogger(__name__)
 
 
 class ExperimentSetup:
@@ -30,6 +32,7 @@ class ExperimentSetup:
             return self._model
 
         self._model = ResNet9(self._model_config, self._optimizer_config, self._batch_size)
+        LOGGER.info(self._model)
         return self._model
 
     @property

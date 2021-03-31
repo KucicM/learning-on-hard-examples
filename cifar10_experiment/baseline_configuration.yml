@@ -1,7 +1,6 @@
 trainer:
   gpus: 1
-  max_epochs: 5
-  benchmark: false
+  max_epochs: 24
   precision: 16
 
 dataloader:
@@ -10,8 +9,6 @@ dataloader:
 
 dataset:
   data_path: "cifar10_experiment/data/cifar10"
-  mean: [0.4914117647058824, 0.48215686274509806, 0.44654901960784316]  # after 0-1 norm
-  std:  [0.24701960784313726, 0.2434901960784314, 0.2615686274509804]   # after 0-1 norm
 
 data_transformations:
   pad:
@@ -22,13 +19,25 @@ data_transformations:
     size: 32
   cutout:
     size: 8
+  normalize:
+    mean: [0.4914117647058824, 0.48215686274509806, 0.44654901960784316]  # after 0-1 norm
+    std:  [0.24701960784313726, 0.2434901960784314, 0.2615686274509804]   # after 0-1 norm
 
 optimizer:
-  base_weight_decay: 0.0005
-  momentum: 0.9
-  nesterov: true
-  lr_peek_epoch: 5
-  lr_peek_value: 0.4
+  SGD:
+    lr: 1
+    weight_decay: 0.0005
+    momentum: 0.9
+    nesterov: true
+  lr_scheduler:
+    epochs:
+      start: 0
+      peek: 5
+      end: -1   # using max_epochs from the trainer
+    values:
+      start: 0
+      peek: 0.4
+      end: 0
 
 model:
   layers:

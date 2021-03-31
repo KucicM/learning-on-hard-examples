@@ -1,5 +1,3 @@
-from abc import ABC
-
 from cifar10_experiment import config
 from torchvision.datasets import CIFAR10
 from torchvision import transforms

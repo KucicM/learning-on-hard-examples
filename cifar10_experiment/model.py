@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, List
 from torch import nn
 import torch.nn.functional as F
 import torch
@@ -31,8 +31,9 @@ class ResNet9(pl.LightningModule):
             nn.MaxPool2d(**net_config.final_max_pool_params),
             nn.Flatten(),
             nn.Linear(**net_config.linear_params),
-            Mul(**net_config.scalar_params),
+            Mul(**net_config.scalar),
         )
+        print(net_config)
 
         self._optimizer_config = optimizer_config
         self._batch_size = batch_size
@@ -59,12 +60,7 @@ class ResNet9(pl.LightningModule):
         self.log("accuracy", accuracy, prog_bar=True, enable_graph=True)
 
     def configure_optimizers(self):
-        optimizer = torch.optim.SGD(
-            self.parameters(),
-            lr=1,  # not used
-            weight_decay=self._optimizer_config.base_weight_decay * self._batch_size,
-            momentum=self._optimizer_config.momentum,
-            nesterov=self._optimizer_config.nesterov)
+        optimizer = torch.optim.SGD(self.parameters(), **self._sgd_params)
 
         # this throws warning when using mixed precision
         # related to https://github.com/PyTorchLightning/pytorch-lightning/issues/5558
@@ -73,23 +69,10 @@ class ResNet9(pl.LightningModule):
             "interval": "step",
             "frequency": 1,
         }
-
-        LOGGER.info("Setting up {} with peek learning at epoch {} with value of {}".format(
-            type(optimizer),
-            self._optimizer_config.lr_peek_epoch,
-            self._optimizer_config.lr_peek_value
-        ))
         return [optimizer], [scheduler]
 
     def _calculate_learning_rate(self, step: int) -> float:
-        number_of_batches = self._train_number_of_batches
-
-        lr = np.interp(
-            [step / number_of_batches],
-            [0, self._lr_peek_epoch, self._num_of_epochs],
-            [0, self._lr_peek_value, 0]
-        )
-
+        lr = np.interp(self._scale_step(step), self._lr_scheduler_epoch_range, self._lr_scheduler_value_range)
         return (lr / self._batch_size)[0]
 
     @property
@@ -102,12 +85,25 @@ class ResNet9(pl.LightningModule):
         return self.trainer.train_dataloader
 
     @property
-    def _lr_peek_value(self) -> float:
-        return self._optimizer_config.lr_peek_value
+    def _sgd_params(self) -> Dict:
+        params = self._optimizer_config.sgd_params
+        params["weight_decay"] *= self._batch_size
+        return params
 
     @property
-    def _lr_peek_epoch(self) -> int:
-        return self._optimizer_config.lr_peek_epoch
+    def _lr_scheduler_epoch_range(self) -> List[int]:
+        epoch_range = self._optimizer_config.lr_scheduler_epochs
+        if epoch_range[-1] == -1:
+            epoch_range[-1] = self._num_of_epochs
+        return epoch_range
+
+    @property
+    def _lr_scheduler_value_range(self) -> List[float]:
+        return self._optimizer_config.lr_scheduler_values
+
+    def _scale_step(self, step) -> List[float]:
+        step /= self._train_number_of_batches
+        return [step]
 
     @property
     def _num_of_epochs(self) -> int:
