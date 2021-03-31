@@ -1,4 +1,5 @@
 pytest==6.2.2
+<<<<<<< HEAD
 pytorch-lightning==1.2.6
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torchvision==0.9.0+cu111
@@ -7,3 +8,9 @@ pandas
 pydot
 torchviz
 pyyaml
+=======
+setuptools==52.0.0
+six==1.15.0
+toml==0.10.1
+wheel==0.36.2
+>>>>>>> b1617edfdf3bc36ea60fd603bab436361448a7af
