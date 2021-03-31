@@ -1,7 +1,9 @@
+from abc import ABC
+
 from cifar10_experiment import config
 from torchvision.datasets import CIFAR10
 from torchvision import transforms
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 from high_cost_data_engine.dataloader import HighCostDataLoader
 from typing import Optional, Union, List, Dict, Tuple
 import pytorch_lightning as pl
@@ -32,16 +34,15 @@ class CIFAR10DataModule(pl.LightningDataModule):
         ])
 
     def prepare_data(self) -> None:
-        # probably do basic transformations and cache it
         CIFAR10(self.data_path, train=True, download=True)
         CIFAR10(self.data_path, train=False, download=True)
 
     def setup(self, stage: Optional[str] = None) -> None:
         if stage == "fit":
-            self._train_set = CIFAR10(self.data_path, train=True, transform=self._train_transforms)  # cache this shit
+            self._train_set = CIFAR10(self.data_path, train=True, transform=self.train_transforms)
 
         if stage == "test":
-            self._test_set = CIFAR10(self.data_path, train=False, transform=self._test_transforms)
+            self._test_set = CIFAR10(self.data_path, train=False, transform=self.test_transforms)
 
     def train_dataloader(self) -> DataLoader:
         return HighCostDataLoader(self._train_set, **self._train_dataloader_params)

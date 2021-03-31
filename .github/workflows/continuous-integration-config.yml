@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-name: learning-on-hard-cifar10_experiment
-=======
 name: learning-on-hard-examples
->>>>>>> b1617edfdf3bc36ea60fd603bab436361448a7af
 
 on: [push]
 
