@@ -1,8 +1,7 @@
-from .models import SQLiteQuery
 from enum import Enum
 
 
-class SQLQuery(SQLiteQuery, Enum):
+class SQLQuery(str, Enum):
     CREATE_CLASS_COST_TABLE = """
         CREATE TABLE class_cost (
             idx INTEGER PRIMARY KEY,
