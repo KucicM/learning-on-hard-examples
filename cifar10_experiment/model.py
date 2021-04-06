@@ -33,7 +33,6 @@ class ResNet9(pl.LightningModule):
             nn.Linear(**net_config.linear_params),
             Mul(**net_config.scalar),
         )
-        print(net_config)
 
         self._optimizer_config = optimizer_config
         self._batch_size = batch_size
