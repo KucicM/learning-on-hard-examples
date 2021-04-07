@@ -89,6 +89,6 @@ def test_resolve_overwrites_only_baseline():
 def test_resolve_overwrites():
     baseline = {"a": 1, "b": 2, "c": {"a": 10, "b": 20}}
     overwrite = {"a": 0, "b": 2, "c": {"a": 11, "c": 31}, "d": 3}
-    expected = {"a": 0, "b": 2, "c": {"a": 11, "c": 31}, "d": 3}
+    expected = {"a": 0, "b": 2, "c": {"a": 11, "b": 20, "c": 31}, "d": 3}
     result = utils.resolve_overwrites(baseline, overwrite)
     assert expected == result

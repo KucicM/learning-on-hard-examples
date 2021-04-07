@@ -7,6 +7,7 @@ LOGGER = logging.getLogger(__name__)
 
 class HighCostDataLoader(DataLoader):
     def __init__(self, dataset: Dataset, num_workers: int, batch_size: int, **kwargs) -> None:
+        LOGGER.info("CREATING NEW DATA LOADER")
 
         sampler = HighCostSampler(dataset)
         super(HighCostDataLoader, self).__init__(

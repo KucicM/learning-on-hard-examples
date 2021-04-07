@@ -40,18 +40,22 @@ class ResNet9(pl.LightningModule):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
-    def training_step(self, batch, batch_idx: int) -> Dict:
+    def validation_step(self, batch, _: int):
         x, y = batch
         out = self.model(x)
         loss = F.cross_entropy(out, y, reduction="none")
+        return loss.mean()
 
-        return {"loss": loss.sum(), "costs": loss}
+    def training_step(self, batch, _: int) -> torch.Tensor:
+        x, y = batch
+        out = self.model(x)
+        return F.cross_entropy(out, y, reduction="sum")
 
     def test_step(self, batch, batch_idx: int) -> None:
         x, y = batch
         out = self.model(x)
 
-        loss = F.cross_entropy(out, y, reduction="none")
+        loss = F.cross_entropy(out, y, reduction="sum")
         _, predictions = torch.max(out.data, 1)
         accuracy = torch.sum(y == predictions).item() / len(y)
 

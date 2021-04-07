@@ -94,6 +94,7 @@ class DatasetConfig:
     def __init__(self, config: Dict) -> None:
         dataset_config = config["dataset"]
         self.data_path = dataset_config["data_path"]
+        self.use_validation = dataset_config.get("use_validation", False)
 
         transforms = config["data_transformations"]
         self.pad_params = transforms["pad"]

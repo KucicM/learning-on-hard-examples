@@ -82,6 +82,8 @@ class ExperimentSetup:
 
 class Experiments(Enum):
     cifar_10_baseline = ExperimentSetup("cifar10_experiment/baseline_configuration.yml")
+    cifar_10_biggest_losers = ExperimentSetup("cifar10_experiment/baseline_configuration.yml",
+                                              "cifar10_experiment/biggest_losers_configuration.yml")
 
     def __call__(self, *args, **kwargs) -> ExperimentSetup:
         return self.value

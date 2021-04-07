@@ -23,15 +23,18 @@ def load_yml(file_path: Optional[str]) -> Optional[Dict]:
 def resolve_overwrites(baseline: Dict, overwrite: Optional[Dict]) -> Dict:
     """
     marge baseline and overwrites and use overwrite if item exits in both.
-    marge is done only on root level of configuration
     e.g.
     >>> baseline = {"a": 1, "b": 2, "c": {"a": 10, "b": 20}}
     >>> overwrite = {"a": 0, "b": 2, "c": {"a": 11, "c": 31}, "d": 3}
     >>> result = resolve_overwrites(baseline, overwrite)
-    >>> result == {"a": 0, "b": 2, "c": {"a": 11, "c": 31}, "d": 3}
+    >>> result == {"a": 0, "b": 2, "c": {"a": 11, "b": 20, "c": 31}, "d": 3}
     true
     """
     if overwrite is None:
         return baseline
+
+    for k, v in baseline.items():
+        if isinstance(v, dict) and k in overwrite:
+            overwrite[k] = resolve_overwrites(v, overwrite[k])
 
     return {**baseline, **overwrite}

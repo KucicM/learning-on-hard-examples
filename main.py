@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from cifar10_experiment.experiments import Experiments
 import pytorch_lightning as pl
+import time
 
 
 if __name__ == "__main__":
@@ -23,6 +24,8 @@ if __name__ == "__main__":
         LOGGER.error(f"{args.experiment} does not exist")
         exit(1)
 
+    st = time.time()
     trainer = pl.Trainer(**configuration.trainer_params)
     trainer.fit(configuration.model, configuration.datamodule)
     trainer.test(configuration.model, datamodule=configuration.datamodule)
+    LOGGER.info(f"END TIME {time.time() - st:.3f} seconds")
