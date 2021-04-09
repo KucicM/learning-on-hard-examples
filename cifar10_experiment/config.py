@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from copy import deepcopy
 from typing import Dict, List
+from high_cost_data_engine import config
 
 
 @dataclass(init=False)
@@ -84,37 +85,14 @@ class OptimizerConfig:
 
 
 @dataclass(init=False)
-class DatasetConfig:
-    data_path: str
-    norm_params: Dict
+class DatasetConfig(config.Dataset):
     pad_params: Dict
     crop_params: Dict
     cutout_params: Dict
 
     def __init__(self, config: Dict) -> None:
-        dataset_config = config["dataset"]
-        self.data_path = dataset_config["data_path"]
-        self.use_validation = dataset_config.get("use_validation", False)
-
+        super().__init__(config)
         transforms = config["data_transformations"]
         self.pad_params = transforms["pad"]
         self.crop_params = transforms["crop"]
         self.cutout_params = transforms["cutout"]
-        self.norm_params = transforms["normalize"]
-
-
-@dataclass(init=False)
-class DataLoaderConfig:
-    train_params: Dict
-
-    def __init__(self, config: Dict) -> None:
-        self.train_params = config["dataloader"]
-
-    @property
-    def batch_size(self) -> int:
-        return self.train_params["batch_size"]
-
-    @property
-    def test_params(self) -> Dict:
-        ret = self.train_params
-        return ret

@@ -3,13 +3,26 @@ trainer:
   max_epochs: 24
   precision: 16
   benchmark: true
+  num_sanity_val_steps: 0
+  weights_summary: full
+#  log_gpu_memory: all
 
-dataloader:
-  num_workers: 12
-  batch_size: 512
+dataloaders:
+  train:
+    num_workers: 12
+    batch_size: 512
+  val:
+    num_workers: 12
+    batch_size: 4096
+  test:
+    num_workers: 12
+    batch_size: 4096
 
 dataset:
   data_path: "cifar10_experiment/data/cifar10"
+  normalize:
+    mean: [0.4914117647058824, 0.48215686274509806, 0.44654901960784316]  # after 0-1 norm
+    std:  [0.24701960784313726, 0.2434901960784314, 0.2615686274509804]   # after 0-1 norm
 
 data_transformations:
   pad:
@@ -20,9 +33,6 @@ data_transformations:
     size: 32
   cutout:
     size: 8
-  normalize:
-    mean: [0.4914117647058824, 0.48215686274509806, 0.44654901960784316]  # after 0-1 norm
-    std:  [0.24701960784313726, 0.2434901960784314, 0.2615686274509804]   # after 0-1 norm
 
 optimizer:
   SGD:

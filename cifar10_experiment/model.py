@@ -1,66 +1,19 @@
+from high_cost_data_engine.model import HighCostModule
 from typing import Dict, List
 from torch import nn
 import torch.nn.functional as F
 import torch
-import pytorch_lightning as pl
 import numpy as np
 from cifar10_experiment.config import ResNet9Config, ConvWithBatchNormConfig, ResidualBlockConfig, OptimizerConfig
 
-import logging
-LOGGER = logging.getLogger(__name__)
 
+class ResNet9(HighCostModule):
+    def __init__(self, net_config: ResNet9Config, optimizer_config: OptimizerConfig, batch_size: int):
+        super().__init__(F.cross_entropy)
 
-class ResNet9(pl.LightningModule):
-    def __init__(self, net_config: ResNet9Config, optimizer_config: OptimizerConfig, batch_size: int) -> None:
-        super().__init__()
-
-        self.model = nn.Sequential(
-            ConvWithBatchNorm(net_config.l0_conv_with_bn_config),
-
-            ConvWithBatchNorm(net_config.l1_conv_with_bn_config),
-            nn.MaxPool2d(**net_config.l1_max_pool_params),
-            ResidualBlock(net_config.l1_residual_config),
-
-            ConvWithBatchNorm(net_config.l2_conv_with_bn_config),
-            nn.MaxPool2d(**net_config.l2_max_pool_params),
-
-            ConvWithBatchNorm(net_config.l3_conv_with_bn_config),
-            nn.MaxPool2d(**net_config.l3_max_pool_params),
-            ResidualBlock(net_config.l3_residual_config),
-
-            nn.MaxPool2d(**net_config.final_max_pool_params),
-            nn.Flatten(),
-            nn.Linear(**net_config.linear_params),
-            Mul(**net_config.scalar),
-        )
-
+        self.model = ResNet9Core(net_config)
         self._optimizer_config = optimizer_config
         self._batch_size = batch_size
-
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
-        return self.model(x)
-
-    def validation_step(self, batch, _: int):
-        x, y = batch
-        out = self.model(x)
-        loss = F.cross_entropy(out, y, reduction="none")
-        return loss.mean()
-
-    def training_step(self, batch, _: int) -> torch.Tensor:
-        x, y = batch
-        out = self.model(x)
-        return F.cross_entropy(out, y, reduction="sum")
-
-    def test_step(self, batch, batch_idx: int) -> None:
-        x, y = batch
-        out = self.model(x)
-
-        loss = F.cross_entropy(out, y, reduction="sum")
-        _, predictions = torch.max(out.data, 1)
-        accuracy = torch.sum(y == predictions).item() / len(y)
-
-        self.log("test_loss", loss)
-        self.log("accuracy", accuracy, prog_bar=True, enable_graph=True)
 
     def configure_optimizers(self):
         optimizer = torch.optim.SGD(self.parameters(), **self._sgd_params)
@@ -116,10 +69,35 @@ class ResNet9(pl.LightningModule):
         return []
 
 
+class ResNet9Core(nn.Module):
+    def __init__(self, net_config: ResNet9Config) -> None:
+        super().__init__()
+
+        self.model = nn.Sequential(
+            ConvWithBatchNorm(net_config.l0_conv_with_bn_config),
+
+            ConvWithBatchNorm(net_config.l1_conv_with_bn_config),
+            nn.MaxPool2d(**net_config.l1_max_pool_params),
+            ResidualBlock(net_config.l1_residual_config),
+
+            ConvWithBatchNorm(net_config.l2_conv_with_bn_config),
+            nn.MaxPool2d(**net_config.l2_max_pool_params),
+
+            ConvWithBatchNorm(net_config.l3_conv_with_bn_config),
+            nn.MaxPool2d(**net_config.l3_max_pool_params),
+            ResidualBlock(net_config.l3_residual_config),
+
+            nn.MaxPool2d(**net_config.final_max_pool_params),
+            nn.Flatten(),
+            nn.Linear(**net_config.linear_params),
+            Mul(**net_config.scalar),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.model(x)
+
+
 class ResidualBlock(nn.Module):
-    """
-    A residual block as defined by He et al.
-    """
     def __init__(self, config: ResidualBlockConfig) -> None:
         super(ResidualBlock, self).__init__()
         self.model = nn.Sequential(

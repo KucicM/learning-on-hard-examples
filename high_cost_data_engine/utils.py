@@ -38,3 +38,26 @@ def resolve_overwrites(baseline: Dict, overwrite: Optional[Dict]) -> Dict:
             overwrite[k] = resolve_overwrites(v, overwrite[k])
 
     return {**baseline, **overwrite}
+
+
+def rename_columns_in_csv(log_dir: str, metrics_name: str = "metrics") -> None:
+    file_name = f"{log_dir}/{metrics_name}.csv"
+    with open(file_name) as f:
+        lines = f.readlines()
+
+    old_names = lines[0].strip().split(",")
+    new_names = [replace_name(name) for name in old_names]
+    new_line = f"{','.join(new_names)}\n"
+    lines[0] = new_line
+
+    with open(file_name, "w") as f:
+        f.writelines(lines)
+
+
+def replace_name(name):
+    if name in {"epoch", "step"}:
+        return name
+
+    typ = "train" if name.endswith("0") else "test"
+    name = name.split("/")[0]
+    return f"{typ}_{name}"
