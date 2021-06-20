@@ -1,5 +1,21 @@
+import torch
 import pytest
-from high_cost_data_engine import utils
+from data_engine import utils
+
+
+def test_random_shuffle_portion_of_1d_tensor_0():
+    torch.random.manual_seed(42)
+    init_array = torch.Tensor([5, 4, 3, 2, 1, 1, 2, 3, 4, 5])
+    result = utils.random_shuffle_portion_of_1d_tensor(init_array, 0)
+    assert torch.all(init_array == result)
+
+
+def test_random_shuffle_portion_of_1d_tensor_50():
+    torch.random.manual_seed(42)
+    init = [5, 4, 3, 2, 1, 1, 2, 3, 4, 5]
+    tensor = torch.Tensor(init)
+    utils.random_shuffle_portion_of_1d_tensor(tensor, 0.5)
+    assert torch.sum(torch.Tensor(init) == tensor) != 10
 
 
 def test_single_item_output():
@@ -77,18 +93,3 @@ def test_load_yml():
     assert expected_dir == config
     os.unlink(file.name)
     assert not os.path.exists(file.name)
-
-
-def test_resolve_overwrites_only_baseline():
-    baseline = {"a": 1, "b": 2, "c": {"a": 10, "b": 20}}
-    overwrite = None
-    result = utils.resolve_overwrites(baseline, overwrite)
-    assert baseline == result
-
-
-def test_resolve_overwrites():
-    baseline = {"a": 1, "b": 2, "c": {"a": 10, "b": 20}}
-    overwrite = {"a": 0, "b": 2, "c": {"a": 11, "c": 31}, "d": 3}
-    expected = {"a": 0, "b": 2, "c": {"a": 11, "b": 20, "c": 31}, "d": 3}
-    result = utils.resolve_overwrites(baseline, overwrite)
-    assert expected == result

@@ -22,7 +22,3 @@ class StandardDeviation:
         mean_squared = self.sum_square / self.count
         variance = mean_squared - mean ** 2
         return sqrt(variance)
-
-
-def init_procedures(connection):
-    connection.create_aggregate("STD", 1, StandardDeviation)

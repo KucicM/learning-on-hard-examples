@@ -1,39 +1,30 @@
+from typing import List
 from argparse import ArgumentParser
-from cifar10_experiment.experiments import Experiments
-import pytorch_lightning as pl
-import time
-from pytorch_lightning.loggers import TensorBoardLogger
+from experiment_setups.settings import ExperimentSettings
+from logging.config import fileConfig
+import logging
 
-
-def run_experiment(config, exp_name):
-    logger = TensorBoardLogger("logs", name=exp_name, log_graph=True)
-
-    st = time.time()
-    trainer = pl.Trainer(**config.trainer_params, logger=logger)
-    model = config.model
-    trainer.fit(model, config.datamodule)
-    LOGGER.info(f"END TIME {time.time() - st:.3f} seconds")
+fileConfig("logging_config.ini", disable_existing_loggers=False)
+LOGGER = logging.getLogger(__name__)
 
 
 if __name__ == "__main__":
-    from logging.config import fileConfig
-    import logging
-    fileConfig("logging_config.ini", disable_existing_loggers=False)
-    LOGGER = logging.getLogger(__name__)
-
     parser = ArgumentParser()
-    parser.add_argument("--experiment", type=str, default="baseline",
-                        help="Which experiment to run")
+    parser.add_argument("--method", type=str, default="traditional", help="Which method to run")
+    parser.add_argument("--seed", type=int, default=42, help="Random seed")
+
+    parser.add_argument("--shuffle-proportion", type=float, default=0,
+                        help="What proportion of labels will be shuffled")
+
+    parser.add_argument("--allowed-stale", type=List[int], default=None)
+    parser.add_argument("--cutoff", type=float, default=0.3)
+    parser.add_argument("--run", type=int, default=0)
+    parser.add_argument("--std", type=List[float], default=None)
+
+    parser.add_argument("--profiler", type=str, default=None, help="Available advanced, simple, pytorch")
 
     args = parser.parse_args()
+    LOGGER.info(f"Running with arguments: {args}")
 
-    configuration = None
-    if args.experiment == "baseline":
-        configuration = Experiments.cifar_10_baseline()
-    elif args.experiment == "selective-backprop":
-        configuration = Experiments.cifar_10_selective_backprop()
-    else:
-        LOGGER.error(f"{args.experiment} does not exist")
-        exit(1)
-
-    run_experiment(configuration, args.experiment)
+    settings = ExperimentSettings(args)
+    settings.start()
