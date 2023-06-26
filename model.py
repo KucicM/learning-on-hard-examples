@@ -1,5 +1,5 @@
 import torch
-from torch import nn, optim
+from torch import nn
 
 
 class Resnet9(nn.Module):

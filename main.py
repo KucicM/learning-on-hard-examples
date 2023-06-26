@@ -11,15 +11,14 @@ import data
 
 
 def run():
-    net = model.Resnet9()
-    net.cuda()
+    net = model.Resnet9().cuda()
     bs = 512
 
     dataloader = DataLoader(
         data.get_dataset(),
         batch_size=bs,
         shuffle=True,
-        num_workers=1,
+        num_workers=12,
         pin_memory=True
     )
 
