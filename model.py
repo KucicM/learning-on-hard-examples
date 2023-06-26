@@ -1,5 +1,5 @@
 import torch
-from torch import nn
+from torch import nn, optim
 
 
 class Resnet9(nn.Module):
@@ -59,3 +59,21 @@ class Mul(nn.Module):
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return x * self.weight
+
+
+class StepOptimizer():
+    def __init__(self, weights, optimizer, **optim_params) -> None:
+        self.params = optim_params
+        self.step_count = 0
+        self.optim = optimizer(weights, **self.update())
+
+    def update(self):
+        return {k: v(self.step_count) if callable(v) else v for k, v in self.params.items()}
+
+    def step(self):
+        self.step_count += 1
+        self.optim.param_groups[0].update(**self.update())
+        self.optim.step()
+
+    def zero_grad(self):
+        self.optim.zero_grad()

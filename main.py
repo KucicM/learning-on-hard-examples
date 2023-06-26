@@ -23,25 +23,14 @@ def run():
         pin_memory=True
     )
 
-    optimizer = optim.SGD(
+    optimizer = model.StepOptimizer(
         net.parameters(),
-        lr=1,
+        optimizer=optim.SGD,
         weight_decay=0.0005 * bs,
         momentum=0.9,
-        nesterov=True
+        nesterov=True,
+        lr=lambda step: (np.interp([step / len(dataloader)], [0, 5, 0], [0, .4, 0]) / bs)[0]
     )
-
-    def calculate_lr():  # TODO not done
-        batch_count = len(dataloader)
-
-        def inner(step: int) -> float:
-            scale = step / batch_count
-            lr = np.interp([scale], [0, 5, 0], [0, .4, 0])
-            return (lr / bs)[0]
-        return inner
-
-    scheduler = optim.lr_scheduler.LambdaLR(
-            optimizer, lr_lambda=calculate_lr(), )
 
     loss_fn = nn.CrossEntropyLoss().cuda()
 
@@ -59,7 +48,6 @@ def run():
             loss.backward()
 
             optimizer.step()
-            scheduler.step()
 
         print(f"{epoch=} took: {time.monotonic() - epoch_start:.2f}s")
     print(f"total time: {time.monotonic() - start:.2f}s")
