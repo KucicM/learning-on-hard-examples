@@ -14,6 +14,7 @@ torch.backends.cudnn.benchmark = True
 
 def run():
     net = model.Resnet9().cuda()
+    net.train()
     bs = 512
 
     dataloader = DataLoader(
@@ -21,7 +22,8 @@ def run():
         batch_size=bs,
         shuffle=True,
         num_workers=12,
-        pin_memory=True
+        pin_memory=True,
+        drop_last=True
     )
 
     optimizer = model.StepOptimizer(
@@ -53,6 +55,26 @@ def run():
 
         print(f"{epoch=} took: {time.monotonic() - epoch_start:.2f}s")
     print(f"total time: {time.monotonic() - start:.2f}s")
+
+    # Eval
+    dataloader = DataLoader(
+        data.get_dataset(False),
+        batch_size=bs,
+        num_workers=12,
+        pin_memory=True,
+        drop_last=False
+    )
+    net.eval()
+
+    correct = 0
+    for x, y in dataloader:
+        x, y = x.cuda(), y.cuda()
+        with torch.no_grad():
+            logits = net.forward(x)
+
+            yp = logits.data.max(1, keepdim=True)[1]
+            correct += yp.eq(y.data.view_as(yp)).sum().cpu()
+    print(correct.item() / len(dataloader.dataset) * 100)
 
 
 if __name__ == "__main__":

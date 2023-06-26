@@ -29,13 +29,19 @@ class Cutout:
         return x, y
 
 
-def get_dataset():
-    transform = transforms.Compose([
-        transforms.Pad(padding=4, fill=0, padding_mode="reflect"),
-        transforms.ToTensor(),
-        transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2470, 0.2435, 0.2616)),
-        transforms.RandomCrop(size=32),
-        transforms.RandomHorizontalFlip(),
-        Cutout(size=8)
-    ])
-    return CIFAR10("data/", train=True, download=True, transform=transform)
+def get_dataset(train=True):
+    if train:
+        transform = transforms.Compose([
+            transforms.Pad(padding=4, fill=0, padding_mode="reflect"),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2470, 0.2435, 0.2616)),
+            transforms.RandomCrop(size=32),
+            transforms.RandomHorizontalFlip(),
+            Cutout(size=8)
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=(0.4914, 0.4822, 0.4465), std=(0.2470, 0.2435, 0.2616))
+        ])
+    return CIFAR10("data/", train=train, download=True, transform=transform)
