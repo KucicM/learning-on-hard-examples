@@ -18,6 +18,8 @@ def run():
         data.get_dataset(),
         batch_size=512,
         shuffle=True,
+        num_workers=1,
+        pin_memory=True
     )
     loss_fn = nn.CrossEntropyLoss()
 
