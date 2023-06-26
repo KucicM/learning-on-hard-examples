@@ -9,6 +9,8 @@ from torch import nn
 import model
 import data
 
+torch.backends.cudnn.benchmark = True
+
 
 def run():
     net = model.Resnet9().cuda()
@@ -39,7 +41,8 @@ def run():
 
         for i, (x, y) in enumerate(dataloader):
             x, y = x.cuda(), y.cuda()
-            optimizer.zero_grad()
+            for param in net.parameters():
+                param.grad = None
 
             with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=True):
                 logits = net.forward(x)
