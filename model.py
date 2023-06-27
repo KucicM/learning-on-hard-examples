@@ -28,8 +28,7 @@ class Resnet9(nn.Module):
 
     def half(self):
         for module in self.children():
-            if type(module) is not nn.BatchNorm2d:
-                module.half()
+            module.half()
         return self
 
 
@@ -67,8 +66,7 @@ class ResidualBlock(nn.Module):
 
     def half(self):
         for module in self.children():
-            if type(module) is not nn.BatchNorm2d:
-                module.half()
+            module.half()
         return self
 
 
@@ -82,8 +80,7 @@ class Mul(nn.Module):
 
     def half(self):
         for module in self.children():
-            if type(module) is not nn.BatchNorm2d:
-                module.half()
+            module.half()
         return self
 
 
