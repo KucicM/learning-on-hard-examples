@@ -59,8 +59,8 @@ def eval(net, dataloader, device, dtype):
         logits = net.forward(x)
 
         yp = logits.data.max(1, keepdim=True)[1]
-        correct += yp.eq(y.data.view_as(yp)).sum().cpu().itme()
-    return 100 * correct / len(dataloader.dataset)
+        correct += yp.eq(y.data.view_as(yp)).sum().cpu()
+    return 100 * correct.item() / len(dataloader.dataset)
 
 
 if __name__ == "__main__":
