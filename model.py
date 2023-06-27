@@ -1,5 +1,7 @@
+import numpy as np
 import torch
 from torch import nn
+from torch import optim
 
 
 class Resnet9(nn.Module):
@@ -101,3 +103,18 @@ class StepOptimizer():
 
     def zero_grad(self):
         self.optim.zero_grad()
+
+
+def get_optimizer(weights, epochs: int, batches: int, batch_size):
+    return StepOptimizer(
+        weights,
+        optimizer=optim.SGD,
+        weight_decay=5e-4 * batch_size,
+        momentum=0.9,
+        nesterov=True,
+        lr=lambda step: calculate_lr(step, epochs, batches, batch_size)
+    )
+
+
+def calculate_lr(step: int, epochs: int, batches: int, bs: int):
+    return np.interp([step / batches], [0, 5, epochs], [0, .4, 0])[0] / bs

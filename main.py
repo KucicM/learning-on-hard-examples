@@ -1,8 +1,6 @@
 import time
 
-import numpy as np
 import torch
-from torch import optim
 from torch import nn
 
 import model
@@ -12,21 +10,19 @@ torch.backends.cudnn.benchmark = True
 
 
 def run():
-    bs, epochs = 512, 24
+    batch_size, epochs = 512, 24
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     dtype = torch.float16 if device.type != "cpu" else torch.float32
 
-    train_dataloader, test_dataloader = data.get_dataloaders(bs)
+    train_dataloader, test_dataloader = data.get_dataloaders(batch_size)
 
     net = model.Resnet9().to(device).to(dtype)
 
-    optimizer = model.StepOptimizer(
-        net.parameters(),
-        optimizer=optim.SGD,
-        weight_decay=5e-4 * bs,
-        momentum=0.9,
-        nesterov=True,
-        lr=lambda step: np.interp([step / len(train_dataloader)], [0, 5, epochs], [0, .4, 0])[0] / bs
+    optimizer = model.get_optimizer(
+        weights=net.parameters(),
+        epochs=epochs,
+        batches=len(train_dataloader),
+        batch_size=batch_size
     )
 
     loss_fn = nn.CrossEntropyLoss(reduction="none").to(device)
@@ -63,8 +59,8 @@ def eval(net, dataloader, device, dtype):
         logits = net.forward(x)
 
         yp = logits.data.max(1, keepdim=True)[1]
-        correct += yp.eq(y.data.view_as(yp)).sum().cpu()
-    return 100 * correct.item() / len(dataloader.dataset)
+        correct += yp.eq(y.data.view_as(yp)).sum().cpu().itme()
+    return 100 * correct / len(dataloader.dataset)
 
 
 if __name__ == "__main__":
