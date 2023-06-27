@@ -1,30 +1,67 @@
-from typing import List
-from argparse import ArgumentParser
-from experiment_setups.settings import ExperimentSettings
-from logging.config import fileConfig
-import logging
+import time
 
-fileConfig("logging_config.ini", disable_existing_loggers=False)
-LOGGER = logging.getLogger(__name__)
+import torch
+from torch import nn
+
+import model
+import data
+
+torch.backends.cudnn.benchmark = True
+
+
+def run():
+    batch_size, epochs = 512, 24
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dtype = torch.float16 if device.type != "cpu" else torch.float32
+
+    train_dataloader, test_dataloader = data.get_dataloaders(batch_size)
+
+    net = model.Resnet9().to(device).to(dtype)
+
+    optimizer = model.get_optimizer(
+        weights=net.parameters(),
+        epochs=epochs,
+        batches=len(train_dataloader),
+        batch_size=batch_size
+    )
+
+    loss_fn = nn.CrossEntropyLoss(reduction="none").to(device)
+
+    start = time.monotonic()
+    for epoch in range(epochs):
+        epoch_start = time.monotonic()
+
+        running_loss = 0
+        for x, y in train_dataloader:
+            x, y = x.to(device).to(dtype), y.to(device).long()
+            for param in net.parameters():
+                param.grad = None
+
+            logits = net.forward(x)
+            loss = loss_fn(logits, y)
+            loss.sum().backward()
+            running_loss += loss.mean().item()
+
+            optimizer.step()
+
+        epoch_time = time.monotonic() - epoch_start
+        accuracy = eval(net, test_dataloader, device, dtype)
+        avg_loss = running_loss / len(train_dataloader)
+        print(f"{epoch=} {epoch_time=:.2f}s {accuracy=:.2f}% {avg_loss=:.3f}")
+    print(f"total time: {time.monotonic() - start:.2f}s")
+
+
+@torch.no_grad()
+def eval(net, dataloader, device, dtype):
+    correct = 0
+    for x, y in dataloader:
+        x, y = x.to(device).to(dtype), y.to(device).long()
+        logits = net.forward(x)
+
+        yp = logits.data.max(1, keepdim=True)[1]
+        correct += yp.eq(y.data.view_as(yp)).sum().cpu()
+    return 100 * correct.item() / len(dataloader.dataset)
 
 
 if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument("--method", type=str, default="traditional", help="Which method to run")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed")
-
-    parser.add_argument("--shuffle-proportion", type=float, default=0,
-                        help="What proportion of labels will be shuffled")
-
-    parser.add_argument("--allowed-stale", type=List[int], default=None)
-    parser.add_argument("--cutoff", type=float, default=0.3)
-    parser.add_argument("--run", type=int, default=0)
-    parser.add_argument("--std", type=List[float], default=None)
-
-    parser.add_argument("--profiler", type=str, default=None, help="Available advanced, simple, pytorch")
-
-    args = parser.parse_args()
-    LOGGER.info(f"Running with arguments: {args}")
-
-    settings = ExperimentSettings(args)
-    settings.start()
+    run()
