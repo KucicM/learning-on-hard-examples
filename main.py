@@ -40,9 +40,17 @@ def run():
             logits = net.forward(x)
             loss = loss_fn(logits, y)
             loss.sum().backward()
+
             running_loss += loss.mean().item()
 
             optimizer.step()
+
+        for x, y in train_dataloader:
+            x, y = x.to(device).to(dtype), y.to(device).long()
+            with torch.no_grad():
+                logits = net.forward(x)
+                loss = loss_fn(logits, y)
+            train_dataloader.update(loss)
 
         epoch_time = time.monotonic() - epoch_start
         accuracy = eval(net, test_dataloader, device, dtype)

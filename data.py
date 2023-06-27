@@ -1,7 +1,8 @@
+import random
 from typing import Tuple
 
 import torch
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader, Sampler
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 
@@ -33,11 +34,44 @@ class Cutout:
         return x, y
 
 
+class HighLossSampler(Sampler):
+    def __init__(self, dataset):
+        self.len = int(len(dataset) * 1)
+        self.losses = [5] * len(dataset)
+        self.ids = []
+        self.id = 0
+
+    def update(self, losses):
+        for loss in losses.cpu():
+            self.losses[self.ids[self.id]] = loss.item()
+            self.id += 1
+
+    def __len__(self):
+        return self.len
+
+    def __iter__(self):
+        self.id = 0
+        self.ids = list(range(self.len))
+        self.ids.sort(key=lambda i: self.losses[i], reverse=True)
+        random.shuffle(self.ids[:self.len])
+        return map(int, self.ids[:self.len])
+
+
+class HighLossDataloader(DataLoader):
+    def __init__(self, dataset, sampler, **kwargs):
+        super().__init__(dataset, sampler=sampler, **kwargs)
+        self._sampler: HighLossSampler = sampler
+
+    def update(self, losses):
+        self._sampler.update(losses)
+
+
 def get_dataloaders(batch_size):
-    train_dataloader = DataLoader(
-        _train_dataset(),
+    train_dataset = _train_dataset()
+    train_dataloader = HighLossDataloader(
+        train_dataset,
+        sampler=HighLossSampler(train_dataset),
         batch_size=batch_size,
-        shuffle=True,
         num_workers=3,
         pin_memory=True,
         drop_last=True
