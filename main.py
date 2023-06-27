@@ -3,7 +3,6 @@ import time
 import numpy as np
 import torch
 from torch import optim
-from torch.utils.data import DataLoader
 from torch import nn
 
 import model
@@ -13,68 +12,59 @@ torch.backends.cudnn.benchmark = True
 
 
 def run():
-    net = model.Resnet9().cuda()
-    net.train()
-    bs = 512
+    bs, epochs = 512, 24
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    dtype = torch.float16 if device.type != "cpu" else torch.float32
 
-    dataloader = DataLoader(
-        data.get_dataset(),
-        batch_size=bs,
-        shuffle=True,
-        num_workers=12,
-        pin_memory=True,
-        drop_last=True
-    )
+    train_dataloader, test_dataloader = data.get_dataloaders(bs)
+
+    net = model.Resnet9().to(device).to(dtype)
 
     optimizer = model.StepOptimizer(
         net.parameters(),
         optimizer=optim.SGD,
-        weight_decay=0.0005 * bs,
+        weight_decay=5e-4 * bs,
         momentum=0.9,
         nesterov=True,
-        lr=lambda step: (np.interp([step / len(dataloader)], [0, 5, 0], [0, .4, 0]) / bs)[0]
+        lr=lambda step: np.interp([step / len(train_dataloader)], [0, 5, epochs], [0, .4, 0])[0] / bs
     )
 
-    loss_fn = nn.CrossEntropyLoss().cuda()
+    loss_fn = nn.CrossEntropyLoss(reduction="none").to(device)
 
     start = time.monotonic()
-    for epoch in range(24):
+    for epoch in range(epochs):
         epoch_start = time.monotonic()
 
-        for i, (x, y) in enumerate(dataloader):
-            x, y = x.cuda(), y.cuda()
+        running_loss = 0
+        for x, y in train_dataloader:
+            x, y = x.to(device).to(dtype), y.to(device).long()
             for param in net.parameters():
                 param.grad = None
 
-            with torch.autocast(device_type="cuda", dtype=torch.float16, enabled=True):
-                logits = net.forward(x)
-                loss = loss_fn(logits, y)
-            loss.backward()
+            logits = net.forward(x)
+            loss = loss_fn(logits, y)
+            loss.sum().backward()
+            running_loss += loss.mean().item()
 
             optimizer.step()
 
-        print(f"{epoch=} took: {time.monotonic() - epoch_start:.2f}s")
+        epoch_time = time.monotonic() - epoch_start
+        accuracy = eval(net, test_dataloader, device, dtype)
+        avg_loss = running_loss / len(train_dataloader)
+        print(f"{epoch=} {epoch_time=:.2f}s {accuracy=:.2f}% {avg_loss=:.3f}")
     print(f"total time: {time.monotonic() - start:.2f}s")
 
-    # Eval
-    dataloader = DataLoader(
-        data.get_dataset(False),
-        batch_size=bs,
-        num_workers=12,
-        pin_memory=True,
-        drop_last=False
-    )
-    net.eval()
 
+@torch.no_grad()
+def eval(net, dataloader, device, dtype):
     correct = 0
     for x, y in dataloader:
-        x, y = x.cuda(), y.cuda()
-        with torch.no_grad():
-            logits = net.forward(x)
+        x, y = x.to(device).to(dtype), y.to(device).long()
+        logits = net.forward(x)
 
-            yp = logits.data.max(1, keepdim=True)[1]
-            correct += yp.eq(y.data.view_as(yp)).sum().cpu()
-    print(correct.item() / len(dataloader.dataset) * 100)
+        yp = logits.data.max(1, keepdim=True)[1]
+        correct += yp.eq(y.data.view_as(yp)).sum().cpu()
+    return 100 * correct.item() / len(dataloader.dataset)
 
 
 if __name__ == "__main__":

@@ -24,6 +24,12 @@ class Resnet9(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
 
+    def half(self):
+        for module in self.children():
+            if type(module) is not nn.BatchNorm2d:
+                module.half()
+        return self
+
 
 class ConvWithBatchNorm(nn.Module):
     def __init__(self, in_channels: int, out_channels: int) -> None:
@@ -32,11 +38,17 @@ class ConvWithBatchNorm(nn.Module):
             nn.Conv2d(in_channels=in_channels, out_channels=out_channels,
                       kernel_size=3, padding=1, bias=False),
             nn.BatchNorm2d(num_features=out_channels),
-            nn.ReLU(inplace=False),
+            nn.ReLU(inplace=True),
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x)
+
+    def half(self):
+        for module in self.children():
+            if type(module) is not nn.BatchNorm2d:
+                module.half()
+        return self
 
 
 class ResidualBlock(nn.Module):
@@ -51,6 +63,12 @@ class ResidualBlock(nn.Module):
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         return self.model(x).add(x)
 
+    def half(self):
+        for module in self.children():
+            if type(module) is not nn.BatchNorm2d:
+                module.half()
+        return self
+
 
 class Mul(nn.Module):
     def __init__(self, weight: float) -> None:
@@ -59,6 +77,12 @@ class Mul(nn.Module):
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
         return x * self.weight
+
+    def half(self):
+        for module in self.children():
+            if type(module) is not nn.BatchNorm2d:
+                module.half()
+        return self
 
 
 class StepOptimizer():
